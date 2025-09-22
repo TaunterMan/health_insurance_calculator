@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Insurance Plan Graph</title>
+    <script>
+        function updateGraph() {
+            // Prepare form data
+            var formData = new FormData(document.getElementById("insuranceForm"));
+
+            // Send AJAX request to Flask endpoint
+            fetch('/plot', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())  // Expect JSON with intersection points
+            .then(data => {
+                // Update the intersection points in the list
+                var pointsList = document.getElementById('pointsList');
+                pointsList.innerHTML = '';  // Clear current list
+
+                data.points.forEach(point => {
+                    var listItem = document.createElement('li');
+                    listItem.textContent = `${point[0]} and ${point[1]} Intersection Point`;
+                    pointsList.appendChild(listItem);
+                });
+
+                // Fetch and update the graph image
+                return fetch('/plot_image');
+            })
+            .then(response => response.blob())  // Get the image as a blob
+            .then(imageBlob => {
+                // Create a URL for the image and set it in the img tag
+                var imageURL = URL.createObjectURL(imageBlob);
+                document.getElementById('graphImage').src = imageURL;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function resetGraph() {
+            fetch('/reset', {
+                method: 'POST'
+            })
+            .then(() => {
+                document.getElementById('graphImage').src = ''; // Clear the graph image
+                document.getElementById('pointsList').innerHTML = ''; // Clear the points list
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</head>
+<body>
+    <h1>Compare Health Insurance Plans</h1>
+
+    <!-- Form for submitting plan data -->
+    <form id="insuranceForm" onsubmit="event.preventDefault(); updateGraph();">
+        <label for="name">Name of Plan:</label>
+        <input type="text" id="name" name="name"><br>
+
+        <label for="premium">Premium (monthly):</label>
+        <input type="number" id="premium" name="premium"><br>
+
+        <label for="deductible">Deductible (yearly):</label>
+        <input type="number" id="deductible" name="deductible"><br>
+
+        <label for="subsidy">Fixed Subsidy:</label>
+        <input type="number" id="subsidy" name="subsidy"><br>
+
+        <label for="coinsurance">Co-insurance:</label>
+        <input type="number" id="coinsurance" name="coinsurance" step="0.01"><br>
+
+        <label for="copay">Co-pay:</label>
+        <input type="number" id="copay" name="copay"><br>
+
+        <label for="max_out_of_pocket">Max Out of Pocket:</label>
+        <input type="number" id="max_out_of_pocket" name="max_out_of_pocket"><br>
+
+        <button type="submit">Generate Graph</button>
+    </form>
+
+    <button onclick="resetGraph()">Reset Graph</button>
+
+    <h2>Live Updated Graph</h2>
+    <!-- This is where the graph will appear -->
+    <img id="graphImage" src="" alt="Graph will appear here after submission"><br>
+
+    <h2>Intersection Points:</h2>
+    <ul id="pointsList">
+        <!-- dynamically update intersection points -->
+    </ul>
+</body>
+</html>
